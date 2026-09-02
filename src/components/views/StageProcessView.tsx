@@ -56,7 +56,7 @@ const STAGE_META: Record<
   },
   'stage-technical': {
     title: 'Stage 2-3: Technical Feasibility & Study',
-    stageId: 'TECHNICAL_STUDY',
+    stageId: 'TECHNICAL_COMPREHENSION',
     icon: Cpu,
     description: 'Engineering study, technical clarification, power calculations, and drawing preparation.',
     targetTab: 'technical',
@@ -64,7 +64,7 @@ const STAGE_META: Record<
   },
   'stage-quotation': {
     title: 'Stage 4: Quotation & Commercial Proposal',
-    stageId: 'QUOTATION_SENT',
+    stageId: 'QUOTATION_RECEIVED',
     icon: FileCheck,
     description: 'Offer preparation, terms of payment, price revision tracking, and proposal submissions.',
     targetTab: 'commercial',
@@ -80,7 +80,7 @@ const STAGE_META: Record<
   },
   'stage-approval': {
     title: 'Stage 6: Purchase Order & Internal Approval',
-    stageId: 'PO_RECEIVED',
+    stageId: 'APPROVAL',
     icon: CheckSquare,
     description: 'Official PO validation, advance payment confirmation, and management approval engine.',
     targetTab: 'commercial',
@@ -88,7 +88,7 @@ const STAGE_META: Record<
   },
   'stage-work-order': {
     title: 'Stage 7: Internal Work Order & BOM Release',
-    stageId: 'WORK_ORDER_CREATED',
+    stageId: 'WORK_ORDER',
     icon: Wrench,
     description: 'Work order generation, department assignments, bill of materials (BOM), and factory release.',
     targetTab: 'manufacturing',
@@ -96,7 +96,7 @@ const STAGE_META: Record<
   },
   'stage-manufacturing': {
     title: 'Stage 8-9: Production & Fabrication Tracking',
-    stageId: 'MANUFACTURING_IN_PROGRESS',
+    stageId: 'MANUFACTURING',
     icon: Factory,
     description: 'Shopfloor assembly, structural fabrication, sub-assembly testing, and progress tracking.',
     targetTab: 'manufacturing',
@@ -104,7 +104,7 @@ const STAGE_META: Record<
   },
   'stage-quality': {
     title: 'Stage 9.5: Quality Inspection & Pre-Dispatch QC',
-    stageId: 'FACTORY_TESTING',
+    stageId: 'MANUFACTURING',
     icon: ShieldCheck,
     description: 'FAT (Factory Acceptance Testing), quality sign-off, pressure testing, and inspection certs.',
     targetTab: 'manufacturing',
@@ -120,7 +120,7 @@ const STAGE_META: Record<
   },
   'stage-delivery': {
     title: 'Stage 11: In-Transit & Site Delivery',
-    stageId: 'IN_TRANSIT',
+    stageId: 'DELIVERY_SCHEDULED',
     icon: Truck,
     description: 'Consignment tracking, LR / Waybill documentation, insurance, and site arrival.',
     targetTab: 'dispatch',
@@ -128,7 +128,7 @@ const STAGE_META: Record<
   },
   'stage-site-readiness': {
     title: 'Stage 12: Customer Site Readiness Clearance',
-    stageId: 'SITE_READINESS_CHECK',
+    stageId: 'SITE_READINESS',
     icon: Building2,
     description: 'Civil foundation, electrical power, piping, air supply, and site readiness certification.',
     targetTab: 'site',
@@ -136,7 +136,7 @@ const STAGE_META: Record<
   },
   'stage-material-receipt': {
     title: 'Stage 13: Site Material Unloading & GRN',
-    stageId: 'MATERIAL_RECEIVED_AT_SITE',
+    stageId: 'MATERIAL_RECEIVED',
     icon: Boxes,
     description: 'Goods receipt note at client site, box inspection, damage report, and unboxing.',
     targetTab: 'site',
@@ -144,7 +144,7 @@ const STAGE_META: Record<
   },
   'stage-installation': {
     title: 'Stage 14: Mechanical & Electrical Erection',
-    stageId: 'ERECTION_IN_PROGRESS',
+    stageId: 'INSTALLATION_ERECTION',
     icon: Hammer,
     description: 'Engineers deployment, alignment, leveling, piping connection, and electrical cabling.',
     targetTab: 'erection',
@@ -152,7 +152,7 @@ const STAGE_META: Record<
   },
   'stage-daily-progress': {
     title: 'Stage 15: Daily Site Erection Progress Logging',
-    stageId: 'ERECTION_COMPLETED',
+    stageId: 'WORK_PROGRESS',
     icon: Activity,
     description: 'Day-to-day site log entries, safety checklist, resource logs, and customer sign-off.',
     targetTab: 'erection',
@@ -160,7 +160,7 @@ const STAGE_META: Record<
   },
   'stage-commissioning': {
     title: 'Stage 16-17: Dry Run & Wet Testing Commissioning',
-    stageId: 'COMMISSIONING_IN_PROGRESS',
+    stageId: 'COMMISSIONING',
     icon: Zap,
     description: 'No-load dry run, trial production runs, process parameter tuning, and speed tests.',
     targetTab: 'erection',
@@ -168,7 +168,7 @@ const STAGE_META: Record<
   },
   'stage-machine-start': {
     title: 'Stage 18: Handover & Official Machine Start',
-    stageId: 'OFFICIAL_MACHINE_START',
+    stageId: 'MACHINE_START',
     icon: PlayCircle,
     description: 'Commercial production start, customer acceptance sign-off, and warranty activation.',
     targetTab: 'erection',
@@ -272,7 +272,7 @@ export const StageProcessView: React.FC<StageProcessViewProps> = ({ stageKey, on
                       <span className="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
                         {proj.projectNumber}
                       </span>
-                      <StatusBadge status={proj.projectStatus} health={proj.health} />
+                      <StatusBadge status={proj.projectStatus} />
                     </div>
 
                     <h3 className="font-bold text-slate-900 text-base line-clamp-1">{proj.projectName}</h3>

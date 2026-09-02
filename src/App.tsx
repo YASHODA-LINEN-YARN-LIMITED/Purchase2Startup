@@ -8,15 +8,31 @@ import { ProjectListView } from './components/project/ProjectListView';
 import { ProjectDetailView } from './components/project/ProjectDetailView';
 import { AttentionRequiredView } from './components/attention/AttentionRequiredView';
 import { CentralizedPendingWorksView } from './components/pending/CentralizedPendingWorksView';
-import { SiteReadinessOverview } from './components/site/SiteReadinessOverview';
-import { ApprovalsCenterView } from './components/commercial/ApprovalsCenterView';
 import { CreateProjectModal } from './components/project/CreateProjectModal';
 import { DatabaseManagerView } from './components/database/DatabaseManagerView';
-import { StageProcessView } from './components/views/StageProcessView';
 import { FinanceView } from './components/views/FinanceView';
 import { ServiceView } from './components/views/ServiceView';
 import { ReportsView } from './components/views/ReportsView';
 import { AdminView } from './components/views/AdminView';
+
+// Import specialized stage modules
+import { RequestInquiryModule } from './components/views/RequestInquiryModule';
+import { TechnicalStudyModule } from './components/views/TechnicalStudyModule';
+import { QuotationRevisionModule } from './components/views/QuotationRevisionModule';
+import { CommercialNegotiationModule } from './components/views/CommercialNegotiationModule';
+import { POApprovalModule } from './components/views/POApprovalModule';
+import { WorkOrderModule } from './components/views/WorkOrderModule';
+import { ManufacturingModule } from './components/views/ManufacturingModule';
+import { QualityTestingModule } from './components/views/QualityTestingModule';
+import { DispatchModule } from './components/views/DispatchModule';
+import { DeliveryTransitModule } from './components/views/DeliveryTransitModule';
+import { SiteReadinessModule } from './components/views/SiteReadinessModule';
+import { SiteMaterialGRNModule } from './components/views/SiteMaterialGRNModule';
+import { InstallationErectionModule } from './components/views/InstallationErectionModule';
+import { DailyProgressModule } from './components/views/DailyProgressModule';
+import { CommissioningStartModule } from './components/views/CommissioningStartModule';
+import { OfficialMachineStartModule } from './components/views/OfficialMachineStartModule';
+import { StageProcessView } from './components/views/StageProcessView';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<string>('dashboard');
@@ -88,21 +104,9 @@ function MainApp() {
             />
           )}
 
-          {currentView === 'site-readiness' && (
-            <SiteReadinessOverview
-              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'site')}
-            />
-          )}
-
           {currentView === 'pending-works' && (
             <CentralizedPendingWorksView
               onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'pending')}
-            />
-          )}
-
-          {(currentView === 'approvals' || currentView === 'stage-approval') && (
-            <ApprovalsCenterView
-              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')}
             />
           )}
 
@@ -110,13 +114,96 @@ function MainApp() {
             <DatabaseManagerView />
           )}
 
-          {/* Process Stage Views */}
-          {currentView.startsWith('stage-') && currentView !== 'stage-approval' && (
-            <StageProcessView
-              stageKey={currentView}
-              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')}
-            />
+          {/* Specialized Stage View Routing */}
+          {currentView === 'stage-request' && (
+            <RequestInquiryModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')} />
           )}
+
+          {currentView === 'stage-technical' && (
+            <TechnicalStudyModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'technical')} />
+          )}
+
+          {currentView === 'stage-quotation' && (
+            <QuotationRevisionModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')} />
+          )}
+
+          {currentView === 'stage-negotiation' && (
+            <CommercialNegotiationModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')} />
+          )}
+
+          {(currentView === 'stage-approval' || currentView === 'approvals') && (
+            <POApprovalModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')} />
+          )}
+
+          {currentView === 'stage-work-order' && (
+            <WorkOrderModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'manufacturing')} />
+          )}
+
+          {currentView === 'stage-manufacturing' && (
+            <ManufacturingModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'manufacturing')} />
+          )}
+
+          {currentView === 'stage-quality' && (
+            <QualityTestingModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'manufacturing')} />
+          )}
+
+          {currentView === 'stage-dispatch' && (
+            <DispatchModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'dispatch')} />
+          )}
+
+          {currentView === 'stage-delivery' && (
+            <DeliveryTransitModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'dispatch')} />
+          )}
+
+          {(currentView === 'stage-site-readiness' || currentView === 'site-readiness') && (
+            <SiteReadinessModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'site')} />
+          )}
+
+          {currentView === 'stage-material-receipt' && (
+            <SiteMaterialGRNModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'site')} />
+          )}
+
+          {currentView === 'stage-installation' && (
+            <InstallationErectionModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'erection')} />
+          )}
+
+          {currentView === 'stage-daily-progress' && (
+            <DailyProgressModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'erection')} />
+          )}
+
+          {currentView === 'stage-commissioning' && (
+            <CommissioningStartModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'erection')} />
+          )}
+
+          {currentView === 'stage-machine-start' && (
+            <OfficialMachineStartModule onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'erection')} />
+          )}
+
+          {/* Catch-all process stage view fallback */}
+          {currentView.startsWith('stage-') &&
+            ![
+              'stage-request',
+              'stage-technical',
+              'stage-quotation',
+              'stage-negotiation',
+              'stage-approval',
+              'stage-work-order',
+              'stage-manufacturing',
+              'stage-quality',
+              'stage-dispatch',
+              'stage-delivery',
+              'stage-site-readiness',
+              'stage-material-receipt',
+              'stage-installation',
+              'stage-daily-progress',
+              'stage-commissioning',
+              'stage-machine-start',
+            ].includes(currentView) && (
+              <StageProcessView
+                stageKey={currentView}
+                onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')}
+              />
+            )}
 
           {/* Finance Views */}
           {(currentView === 'payments' || currentView === 'outstanding') && (

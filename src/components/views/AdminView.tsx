@@ -19,7 +19,7 @@ interface AdminViewProps {
 }
 
 export const AdminView: React.FC<AdminViewProps> = ({ viewId }) => {
-  const { auditLogs, stageWeights, updateStageWeight } = useData();
+  const { auditLogs, stageConfigs } = useData();
   const [search, setSearch] = useState('');
 
   const sampleUsers = [
@@ -176,19 +176,15 @@ export const AdminView: React.FC<AdminViewProps> = ({ viewId }) => {
           </div>
 
           <div className="space-y-3">
-            {Object.entries(stageWeights).map(([stageId, weight]) => {
-              const stageName = STAGE_MAP[stageId as any]?.name || stageId;
+            {stageConfigs.map((cfg) => {
+              const stageName = STAGE_MAP[cfg.id]?.name || cfg.name;
               return (
-                <div key={stageId} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div key={cfg.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                   <span className="text-sm font-medium text-slate-800">{stageName}</span>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="number"
-                      value={weight}
-                      onChange={(e) => updateStageWeight(stageId as any, Number(e.target.value))}
-                      className="w-20 px-2.5 py-1 text-sm font-bold border border-slate-300 rounded text-right focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-xs font-bold text-slate-500">%</span>
+                    <span className="w-20 px-2.5 py-1 text-sm font-bold text-right text-slate-700 font-mono">
+                      {cfg.weightPercent}%
+                    </span>
                   </div>
                 </div>
               );
