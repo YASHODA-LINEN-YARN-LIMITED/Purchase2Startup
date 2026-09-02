@@ -69,7 +69,7 @@ export const CentralizedPendingWorksView: React.FC<Props> = ({ onSelectProject }
             Centralized Pending Works & Punchlist Registry
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cross-project punch items from Site Readiness, Installation, and Commissioning trials.
+            Cross-machine punch items from Site Readiness, Installation, and Commissioning trials.
           </p>
         </div>
       </div>
@@ -92,7 +92,7 @@ export const CentralizedPendingWorksView: React.FC<Props> = ({ onSelectProject }
           onChange={(e) => setProjectFilter(e.target.value)}
           className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-medium"
         >
-          <option value="ALL">All Projects</option>
+          <option value="ALL">All Machines</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.projectNumber} - {p.projectName}
@@ -145,7 +145,7 @@ export const CentralizedPendingWorksView: React.FC<Props> = ({ onSelectProject }
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="p-3">ID & Project</th>
+                <th className="p-3">ID & Machine</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Work Description</th>
                 <th className="p-3">Priority</th>

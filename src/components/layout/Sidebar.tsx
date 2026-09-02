@@ -31,6 +31,7 @@ import {
   Building,
   Settings,
   History,
+  Database,
   ChevronRight,
   ChevronDown,
   Menu,
@@ -131,13 +132,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* 2. Projects Section */}
+      {/* 2. Machines Section */}
       <div>
         <div
           onClick={() => toggleSection('projects')}
           className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1 cursor-pointer hover:text-slate-600"
         >
-          <span>Projects Master</span>
+          <span>Machines Master</span>
           {expandedSections.projects ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         </div>
         {expandedSections.projects && (
@@ -151,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <FolderGit2 className="w-4 h-4" />
-                <span>All Projects</span>
+                <span>All Machines</span>
               </div>
               <span className="text-[11px] text-slate-400">{projects.length}</span>
             </button>
@@ -164,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <PlusCircle className="w-4 h-4" />
-                <span>Create New Project</span>
+                <span>Add New Machine</span>
               </div>
             </button>
           </div>
@@ -549,6 +550,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Building className="w-4 h-4" />
                 <span>Departments</span>
               </div>
+            </button>
+            <button
+              onClick={() => {
+                onNavigate('database');
+                setIsMobileOpen(false);
+              }}
+              className={navItemClass('database')}
+            >
+              <div className="flex items-center gap-2.5">
+                <Database className="w-4 h-4 text-blue-600" />
+                <span>Supabase Live DB & Schemas</span>
+              </div>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                LIVE
+              </span>
             </button>
             <button
               onClick={() => {

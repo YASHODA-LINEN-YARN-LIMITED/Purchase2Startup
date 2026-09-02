@@ -93,7 +93,7 @@ export const SiteReadinessModal: React.FC<SiteReadinessModalProps> = ({
   const handleDecision = (isReady: boolean) => {
     setSiteReadyDecision(project.id, isReady);
     if (isReady) {
-      alert(`Project ${project.projectNumber} is verified SITE READY. Material unloading is permitted.`);
+      alert(`Machine ${project.projectNumber} is verified SITE READY. Material unloading is permitted.`);
     } else {
       alert(`Site marked NOT READY. Pending tasks have been transferred to Centralized Pending Works.`);
     }
@@ -233,7 +233,7 @@ export const SiteReadinessModal: React.FC<SiteReadinessModalProps> = ({
                   </span>
                 </div>
                 <div className="p-2 bg-white/70 rounded-lg border border-emerald-100">
-                  <span className="text-slate-400 block">Project Lead:</span>
+                  <span className="text-slate-400 block">Package Lead:</span>
                   <span className="font-semibold text-slate-800">
                     {existingCert.projectApprovedBy}
                   </span>
@@ -295,7 +295,7 @@ export const SiteReadinessModal: React.FC<SiteReadinessModalProps> = ({
                 </div>
                 <div>
                   <label className="font-medium text-slate-700 block mb-1">
-                    Project Lead Sign-off
+                    Package Lead Sign-off
                   </label>
                   <input
                     type="text"

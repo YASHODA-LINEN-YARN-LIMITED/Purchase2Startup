@@ -55,10 +55,10 @@ export const ProjectListView: React.FC<Props> = ({ onSelectProject, onNewProject
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Projects Master Portfolio
+            Machines Master Portfolio
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Full registry of all heavy equipment procurement, fabrication, and start-up projects.
+            Full registry of all mill equipment procurement, fabrication, and start-up machines.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export const ProjectListView: React.FC<Props> = ({ onSelectProject, onNewProject
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl flex items-center gap-2 shadow-xs transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Create New Project</span>
+            <span>Add New Machine</span>
           </button>
         </div>
       </div>
@@ -79,7 +79,7 @@ export const ProjectListView: React.FC<Props> = ({ onSelectProject, onNewProject
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by project #, customer, model, engineer..."
+            placeholder="Search by machine #, customer, model, engineer..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-blue-500"
@@ -131,14 +131,14 @@ export const ProjectListView: React.FC<Props> = ({ onSelectProject, onNewProject
         </div>
       </div>
 
-      {/* Projects Display */}
+      {/* Machines Display */}
       {viewMode === 'table' ? (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="p-3">Project # & Name</th>
+                  <th className="p-3">Machine # & Name</th>
                   <th className="p-3">Customer & Location</th>
                   <th className="p-3">Machine Model</th>
                   <th className="p-3">Current Stage</th>
@@ -153,7 +153,7 @@ export const ProjectListView: React.FC<Props> = ({ onSelectProject, onNewProject
                 {filteredProjects.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-slate-400">
-                      No projects found matching the criteria.
+                      No machines found matching the criteria.
                     </td>
                   </tr>
                 ) : (

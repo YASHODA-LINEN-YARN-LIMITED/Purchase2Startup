@@ -67,12 +67,12 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   if (!project) {
     return (
       <div className="p-8 text-center">
-        <div className="text-slate-500 mb-4">Project not found or may have been removed.</div>
+        <div className="text-slate-500 mb-4">Machine not found or may have been removed.</div>
         <button
           onClick={onBack}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold"
         >
-          Return to All Projects
+          Return to All Machines
         </button>
       </div>
     );
@@ -107,14 +107,14 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           className="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Projects</span>
+          <span>Back to Machines</span>
         </button>
 
         <div className="flex items-center gap-2">
           {project.delayDays > 0 ? (
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-              <span>Project Delayed: +{project.delayDays} days</span>
+              <span>Machine Delayed: +{project.delayDays} days</span>
             </span>
           ) : (
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -140,7 +140,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         </div>
       </div>
 
-      {/* Critical Project Header Card (Section 6) */}
+      {/* Critical Machine Header Card */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 lg:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 pb-6 border-b border-slate-100">
           <div>
@@ -175,7 +175,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
               </div>
               <span>•</span>
               <div>
-                <span>PM: </span>
+                <span>In-charge: </span>
                 <span className="font-medium text-slate-700">{project.projectManager}</span>
               </div>
             </div>
@@ -313,7 +313,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 border border-slate-200">
             <h3 className="font-bold text-slate-900 text-sm mb-3">
-              Change Project Stage
+              Change Machine Stage
             </h3>
             <p className="text-xs text-slate-500 mb-4">
               Select the active stage for {project.projectNumber}. The system will update completion % and record an audit entry.

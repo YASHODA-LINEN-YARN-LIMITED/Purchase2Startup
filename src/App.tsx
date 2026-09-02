@@ -11,6 +11,7 @@ import { CentralizedPendingWorksView } from './components/pending/CentralizedPen
 import { SiteReadinessOverview } from './components/site/SiteReadinessOverview';
 import { ApprovalsCenterView } from './components/commercial/ApprovalsCenterView';
 import { CreateProjectModal } from './components/project/CreateProjectModal';
+import { DatabaseManagerView } from './components/database/DatabaseManagerView';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<string>('dashboard');
@@ -98,6 +99,10 @@ function MainApp() {
             <ApprovalsCenterView
               onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')}
             />
+          )}
+
+          {currentView === 'database' && (
+            <DatabaseManagerView />
           )}
         </main>
       </div>

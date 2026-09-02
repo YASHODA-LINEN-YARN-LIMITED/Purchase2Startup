@@ -73,7 +73,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
               onClick={onNewProject}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-all"
             >
-              + Add Machine Package
+              + Add New Machine
             </button>
           </div>
         </div>
@@ -86,7 +86,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
           className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs hover:border-blue-400 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Total Machine Packages</span>
+            <span className="text-xs font-medium">Total Machines</span>
             <FolderGit2 className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">{totalProjects}</div>
@@ -101,7 +101,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
           className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs hover:border-rose-400 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Delayed Projects</span>
+            <span className="text-xs font-medium">Delayed Machines</span>
             <AlertTriangle className="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-2xl font-bold text-rose-600 mt-2">{delayedProjects.length}</div>
@@ -146,7 +146,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-rose-600" />
               <h3 className="font-bold text-slate-900 text-sm">
-                Attention Required: Critical Bottlenecks & Delayed Projects
+                Attention Required: Critical Bottlenecks & Delayed Machines
               </h3>
             </div>
             <button
@@ -183,7 +183,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
                       <span className="font-semibold text-slate-800">{currentStageInfo?.name}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400">Project Manager: </span>
+                      <span className="text-slate-400">In-charge: </span>
                       <span className="text-slate-700">{p.projectManager}</span>
                     </div>
                   </div>
@@ -194,15 +194,15 @@ export const ExecutiveDashboard: React.FC<Props> = ({
         </div>
       ) : null}
 
-      {/* 4. Active Projects Grid with 21-Stage Progress Bar */}
+      {/* 4. Active Machines Grid with 21-Stage Progress Bar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 lg:p-6 shadow-xs">
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
           <div>
             <h3 className="font-bold text-slate-900 text-base">
-              Active Equipment Lifecycles (21 Stages)
+              Active Machine Lifecycles (21 Stages)
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select any project to drill down into technical reviews, work orders, site clearances, and commissioning.
+              Select any machine to drill down into technical reviews, work orders, site clearances, and commissioning.
             </p>
           </div>
 
@@ -210,7 +210,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
             onClick={() => onNavigate('projects')}
             className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
           >
-            <span>View All Projects</span>
+            <span>View All Machines</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

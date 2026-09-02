@@ -71,6 +71,18 @@ import {
   INITIAL_COMMENTS,
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
+import {
+  fetchProjectsFromSupabase,
+  fetchCustomersFromSupabase,
+  fetchPendingTasksFromSupabase,
+  upsertProjectToSupabase,
+  deleteProjectFromSupabase,
+  upsertPendingTaskToSupabase,
+  upsertSiteTaskToSupabase,
+  insertAuditLogToSupabase,
+  pushSeedDataToSupabase,
+} from '../lib/databaseSync';
+import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabase';
 
 interface DataContextType {
   customers: Customer[];
@@ -172,6 +184,18 @@ interface DataContextType {
   recordAuditLog: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
   updateStageConfig: (id: ProcessStageId, weightPercent: number) => void;
   exportToCsv: (filename: string, rows: Record<string, any>[]) => void;
+
+  // Supabase Live Synchronization
+  supabaseSyncStatus: {
+    isConnected: boolean;
+    tablesReady: boolean;
+    isSyncing: boolean;
+    lastSyncTime: string | null;
+    syncError: string | null;
+  };
+  pushLocalToSupabase: () => Promise<{ success: boolean; message: string }>;
+  pullSupabaseToLocal: () => Promise<{ success: boolean; message: string }>;
+  checkTablesStatus: () => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -244,6 +268,119 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('p2s_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
+  // Supabase Live Synchronization State
+  const [supabaseSyncStatus, setSupabaseSyncStatus] = useState<{
+    isConnected: boolean;
+    tablesReady: boolean;
+    isSyncing: boolean;
+    lastSyncTime: string | null;
+    syncError: string | null;
+  }>({
+    isConnected: false,
+    tablesReady: false,
+    isSyncing: false,
+    lastSyncTime: null,
+    syncError: null,
+  });
+
+  const checkTablesStatus = async () => {
+    if (!isSupabaseConfigured) return;
+    try {
+      const res = await testSupabaseConnection();
+      setSupabaseSyncStatus((prev) => ({
+        ...prev,
+        isConnected: res.connected,
+        tablesReady: res.tablesFound,
+        syncError: res.error || null,
+      }));
+
+      // If tables are found, pull remote data from Supabase!
+      if (res.tablesFound) {
+        const { data: remoteProjects } = await fetchProjectsFromSupabase();
+        if (remoteProjects && remoteProjects.length > 0) {
+          setProjects(remoteProjects);
+          setSupabaseSyncStatus((prev) => ({
+            ...prev,
+            lastSyncTime: new Date().toLocaleTimeString(),
+          }));
+        } else if (remoteProjects && remoteProjects.length === 0) {
+          // Tables exist in Supabase but are empty - seed them
+          console.log('Supabase tables empty, auto-seeding with local records...');
+          await pushSeedDataToSupabase(customers, projects, pendingTasks);
+        }
+
+        const { data: remoteCusts } = await fetchCustomersFromSupabase();
+        if (remoteCusts && remoteCusts.length > 0) {
+          setCustomers(remoteCusts);
+        }
+
+        const { data: remoteTasks } = await fetchPendingTasksFromSupabase();
+        if (remoteTasks && remoteTasks.length > 0) {
+          setPendingTasks(remoteTasks);
+        }
+      }
+    } catch (err: any) {
+      console.warn('Supabase status check error:', err);
+    }
+  };
+
+  useEffect(() => {
+    checkTablesStatus();
+  }, []);
+
+  const pushLocalToSupabase = async () => {
+    setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
+    try {
+      const res = await pushSeedDataToSupabase(customers, projects, pendingTasks);
+      setSupabaseSyncStatus((prev) => ({
+        ...prev,
+        isSyncing: false,
+        lastSyncTime: new Date().toLocaleTimeString(),
+        syncError: res.success ? null : res.message,
+      }));
+      return res;
+    } catch (err: any) {
+      const msg = err.message || 'Error pushing to Supabase';
+      setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: msg }));
+      return { success: false, message: msg };
+    }
+  };
+
+  const pullSupabaseToLocal = async () => {
+    setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
+    try {
+      const { data: projs, error: pErr } = await fetchProjectsFromSupabase();
+      if (pErr) throw pErr;
+      if (projs && projs.length > 0) {
+        setProjects(projs);
+      }
+
+      const { data: custs, error: cErr } = await fetchCustomersFromSupabase();
+      if (cErr) throw cErr;
+      if (custs && custs.length > 0) {
+        setCustomers(custs);
+      }
+
+      const { data: tasks, error: tErr } = await fetchPendingTasksFromSupabase();
+      if (tErr) throw tErr;
+      if (tasks && tasks.length > 0) {
+        setPendingTasks(tasks);
+      }
+
+      setSupabaseSyncStatus((prev) => ({
+        ...prev,
+        isSyncing: false,
+        lastSyncTime: new Date().toLocaleTimeString(),
+        syncError: null,
+      }));
+      return { success: true, message: 'Successfully fetched latest records from Supabase.' };
+    } catch (err: any) {
+      const msg = err.message || 'Error pulling from Supabase';
+      setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: msg }));
+      return { success: false, message: msg };
+    }
+  };
+
   // Record Audit Log helper
   const recordAuditLog = (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
     const newEntry: AuditLogEntry = {
@@ -252,6 +389,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
     };
     setAuditLogs((prev) => [newEntry, ...prev]);
+    if (supabaseSyncStatus.tablesReady) {
+      insertAuditLogToSupabase(newEntry).catch(() => {});
+    }
   };
 
   // Calculate project completion % dynamically from stage weights
@@ -320,11 +460,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       status: 'Draft',
     });
 
+    if (supabaseSyncStatus.tablesReady) {
+      upsertProjectToSupabase(newProject).catch((err) => console.warn('Supabase upsert project failed:', err));
+    }
+
     return newProject;
   };
 
   // Update Project
   const updateProject = (id: string, updates: Partial<Project>, actorName = 'User', actorRole = 'PROJECT') => {
+    let updatedProject: Project | null = null;
     setProjects((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
@@ -342,9 +487,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           updated.health = 'Green';
         }
+        updatedProject = updated;
         return updated;
       })
     );
+
+    if (supabaseSyncStatus.tablesReady && updatedProject) {
+      upsertProjectToSupabase(updatedProject).catch((err) => console.warn('Supabase project update failed:', err));
+    }
 
     recordAuditLog({
       userName: actorName,
@@ -362,6 +512,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteProject = (id: string) => {
     const target = projects.find((p) => p.id === id);
     setProjects((prev) => prev.filter((p) => p.id !== id));
+    if (supabaseSyncStatus.tablesReady) {
+      deleteProjectFromSupabase(id).catch((err) => console.warn('Supabase delete project failed:', err));
+    }
     if (target) {
       recordAuditLog({
         userName: 'Admin',
@@ -383,6 +536,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const oldStage = target.currentStage;
     const isCompleted = nextStage === 'AFTER_SALES_SERVICE' || nextStage === 'FINAL_PAYMENT';
+    let updatedProj: Project | null = null;
 
     setProjects((prev) =>
       prev.map((p) => {
@@ -394,7 +548,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           else if (s.order === nextOrder) calculated += Math.round(s.weightPercent * 0.5);
         }
 
-        return {
+        const res: Project = {
           ...p,
           currentStage: nextStage,
           overallCompletionPercent: Math.min(100, calculated),
@@ -402,8 +556,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastModifiedDate: new Date().toISOString().substring(0, 10),
           lastModifiedBy: actorName,
         };
+        updatedProj = res;
+        return res;
       })
     );
+
+    if (supabaseSyncStatus.tablesReady && updatedProj) {
+      upsertProjectToSupabase(updatedProj).catch((err) => console.warn('Supabase stage advance update failed:', err));
+    }
 
     recordAuditLog({
       userName: actorName,
@@ -1291,6 +1451,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recordAuditLog,
         updateStageConfig,
         exportToCsv,
+        supabaseSyncStatus,
+        pushLocalToSupabase,
+        pullSupabaseToLocal,
+        checkTablesStatus,
       }}
     >
       {children}

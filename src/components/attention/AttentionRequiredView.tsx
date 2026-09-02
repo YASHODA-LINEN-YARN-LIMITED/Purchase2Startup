@@ -60,7 +60,7 @@ export const AttentionRequiredView: React.FC<Props> = ({ onSelectProject }) => {
 
         {delayedProjects.length === 0 ? (
           <div className="p-4 text-center text-slate-400 text-xs">
-            No projects are currently experiencing schedule delays. All timelines on track!
+            No machines are currently experiencing schedule delays. All timelines on track!
           </div>
         ) : (
           <div className="space-y-3">
@@ -85,7 +85,7 @@ export const AttentionRequiredView: React.FC<Props> = ({ onSelectProject }) => {
                       Customer: <strong className="text-slate-800">{p.customerName}</strong> • Target: {p.targetDeliveryDate}
                     </div>
                     <div className="text-[11px] text-slate-500 mt-1">
-                      Blocked at: Stage {order} ({currentStageInfo?.name}) • Project Manager: {p.projectManager}
+                      Blocked at: Stage {order} ({currentStageInfo?.name}) • In-charge: {p.projectManager}
                     </div>
                   </div>
 

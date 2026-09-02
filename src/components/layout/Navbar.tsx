@@ -94,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Global Search (Project #, Customer, Machine, PO #, Person)..."
+              placeholder="Global Search (Machine #, Model, Section, PO #, Engineer)..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
@@ -120,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
           {showSearchResults && searchQuery.trim().length > 0 && (
             <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden z-50">
               <div className="p-2 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500 font-medium">
-                <span>Matching Projects ({filteredProjects.length})</span>
+                <span>Matching Machines ({filteredProjects.length})</span>
                 <button
                   onClick={() => setShowSearchResults(false)}
                   className="text-slate-400 hover:text-slate-600"
@@ -131,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
               <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
                 {filteredProjects.length === 0 ? (
                   <div className="p-4 text-center text-sm text-slate-500">
-                    No matching records found for "{searchQuery}"
+                    No matching machines found for "{searchQuery}"
                   </div>
                 ) : (
                   filteredProjects.map((p) => (
@@ -160,7 +160,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
                         <span>•</span>
                         <span>{p.machineModel}</span>
                         <span>•</span>
-                        <span>PM: {p.projectManager}</span>
+                        <span>Lead: {p.projectManager}</span>
                       </div>
                     </div>
                   ))
@@ -173,18 +173,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
         {/* Right Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Supabase Status Indicator */}
-          <div
-            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 bg-slate-50 text-slate-700"
-            title={
-              isSupabaseConfigured
-                ? 'Connected to configured Supabase Project'
-                : 'Using Local Storage & In-Memory Data Store (Configure Supabase credentials in .env to connect live backend)'
-            }
+          <button
+            onClick={() => onNavigate?.('database')}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-800 transition cursor-pointer"
+            title="Open Supabase Live Database & Schema Center"
           >
             <Database className="w-3.5 h-3.5 text-blue-600" />
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{isSupabaseConfigured ? 'Supabase Live' : 'P2S Data Ready'}</span>
-          </div>
+            <span className="font-semibold">{isSupabaseConfigured ? 'Supabase Live DB' : 'Database Setup'}</span>
+          </button>
 
           {/* Quick Role Switcher Pill */}
           <div className="relative">

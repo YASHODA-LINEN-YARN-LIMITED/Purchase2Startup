@@ -14,7 +14,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
   const { currentUser } = useAuth();
 
   const nextSeq = String(projects.length + 1).padStart(3, '0');
-  const defaultProjectNumber = `PRJ-2026-${nextSeq}`;
+  const defaultProjectNumber = `MCH-2026-${nextSeq}`;
 
   const [form, setForm] = useState({
     projectNumber: defaultProjectNumber,
@@ -88,8 +88,8 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
           <div className="flex items-center gap-2">
             <FolderPlus className="w-5 h-5 text-blue-600" />
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Create New Equipment Project</h2>
-              <p className="text-slate-500 text-[11px]">Initialize project lifecycle across 21 stages.</p>
+              <h2 className="font-bold text-slate-900 text-sm">Add New Machine / Equipment</h2>
+              <p className="text-slate-500 text-[11px]">Initialize machine lifecycle across 21 stages.</p>
             </div>
           </div>
           <button
@@ -103,7 +103,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Project Number</label>
+              <label className="font-semibold text-slate-700 block mb-1">Machine / Package Number</label>
               <input
                 type="text"
                 value={form.projectNumber}
@@ -113,7 +113,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
               />
             </div>
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Project Name / Description</label>
+              <label className="font-semibold text-slate-700 block mb-1">Machine Name / Description</label>
               <input
                 type="text"
                 placeholder="e.g. 500 TPH Continuous Heavy Duty Line"
@@ -196,7 +196,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
               />
             </div>
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Assigned Project Manager</label>
+              <label className="font-semibold text-slate-700 block mb-1">Assigned In-charge / Engineer</label>
               <input
                 type="text"
                 value={form.projectManager}
@@ -229,7 +229,7 @@ export const CreateProjectModal: React.FC<Props> = ({ isOpen, onClose, onCreated
               type="submit"
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xs"
             >
-              Initialize Project & Open Lifecycle
+              Save Machine & Open Lifecycle
             </button>
           </div>
         </form>
