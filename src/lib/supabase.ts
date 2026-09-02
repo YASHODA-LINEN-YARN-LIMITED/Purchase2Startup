@@ -12,21 +12,37 @@ export function cleanSupabaseUrl(rawUrl: string): string {
 const rawEnvUrl = metaEnv.VITE_SUPABASE_URL || '';
 const rawEnvKey = metaEnv.VITE_SUPABASE_ANON_KEY || '';
 
-// Check local storage overrides if user customized in-app
-const customUrl = typeof window !== 'undefined' ? localStorage.getItem('p2s_custom_supabase_url') : null;
-const customKey = typeof window !== 'undefined' ? localStorage.getItem('p2s_custom_supabase_anon_key') : null;
+export function getStoredSupabaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('p2s_custom_supabase_url');
+    if (custom) return cleanSupabaseUrl(custom);
+  }
+  return cleanSupabaseUrl(rawEnvUrl);
+}
 
-export const supabaseUrl = cleanSupabaseUrl(customUrl || rawEnvUrl);
-export const supabaseAnonKey = (customKey || rawEnvKey).trim();
+export function getStoredSupabaseKey(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('p2s_custom_supabase_anon_key');
+    if (custom) return custom.trim();
+  }
+  return rawEnvKey.trim();
+}
 
-export const isSupabaseConfigured = Boolean(
-  supabaseUrl &&
-    supabaseAnonKey &&
-    supabaseUrl !== 'https://your-project.supabase.co' &&
-    supabaseAnonKey !== 'your-anon-key-here' &&
-    !supabaseUrl.includes('MY_') &&
-    supabaseUrl.startsWith('http')
-);
+export let supabaseUrl = getStoredSupabaseUrl();
+export let supabaseAnonKey = getStoredSupabaseKey();
+
+export function isConfigured(url = supabaseUrl, key = supabaseAnonKey): boolean {
+  return Boolean(
+    url &&
+      key &&
+      url !== 'https://your-project.supabase.co' &&
+      key !== 'your-anon-key-here' &&
+      !url.includes('MY_') &&
+      url.startsWith('http')
+  );
+}
+
+export const isSupabaseConfigured = isConfigured();
 
 // Extract project reference from URL (e.g., https://mplutsdsmkmioyrkroez.supabase.co -> mplutsdsmkmioyrkroez)
 export function getProjectRef(url: string = supabaseUrl): string {
@@ -40,17 +56,21 @@ export function getProjectRef(url: string = supabaseUrl): string {
   return '';
 }
 
-export const projectRef = getProjectRef();
+export let projectRef = getProjectRef();
 
 let supabaseInstance: SupabaseClient | null = null;
 
-export function getSupabaseClient(): SupabaseClient | null {
-  if (!isSupabaseConfigured) {
+export function getSupabaseClient(forceRefresh = false): SupabaseClient | null {
+  const currentUrl = getStoredSupabaseUrl();
+  const currentKey = getStoredSupabaseKey();
+
+  if (!isConfigured(currentUrl, currentKey)) {
     return null;
   }
-  if (!supabaseInstance) {
+
+  if (!supabaseInstance || forceRefresh) {
     try {
-      supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      supabaseInstance = createClient(currentUrl, currentKey, {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
@@ -64,7 +84,30 @@ export function getSupabaseClient(): SupabaseClient | null {
   return supabaseInstance;
 }
 
-export const supabase = isSupabaseConfigured ? getSupabaseClient() : null;
+export function saveSupabaseCredentials(url: string, key: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('p2s_custom_supabase_url', cleanSupabaseUrl(url));
+    localStorage.setItem('p2s_custom_supabase_anon_key', key.trim());
+  }
+  supabaseUrl = getStoredSupabaseUrl();
+  supabaseAnonKey = getStoredSupabaseKey();
+  projectRef = getProjectRef(supabaseUrl);
+  supabaseInstance = null; // force recreate
+  return getSupabaseClient(true);
+}
+
+export function clearSupabaseCredentials() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('p2s_custom_supabase_url');
+    localStorage.removeItem('p2s_custom_supabase_anon_key');
+  }
+  supabaseUrl = getStoredSupabaseUrl();
+  supabaseAnonKey = getStoredSupabaseKey();
+  projectRef = getProjectRef(supabaseUrl);
+  supabaseInstance = null;
+}
+
+export const supabase = getSupabaseClient();
 
 export interface ConnectionTestResult {
   connected: boolean;
@@ -89,33 +132,42 @@ const KEY_TABLES = [
 /**
  * Checks connection to Supabase and verifies if the database tables have been created
  */
-export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
+export async function testSupabaseConnection(overrideUrl?: string, overrideKey?: string): Promise<ConnectionTestResult> {
+  const urlToTest = overrideUrl !== undefined ? cleanSupabaseUrl(overrideUrl) : getStoredSupabaseUrl();
+  const keyToTest = overrideKey !== undefined ? overrideKey.trim() : getStoredSupabaseKey();
+
   const result: ConnectionTestResult = {
     connected: false,
     tablesFound: false,
     missingTables: [],
     existingTables: [],
     latencyMs: 0,
-    projectUrl: supabaseUrl,
-    projectRef,
+    projectUrl: urlToTest,
+    projectRef: getProjectRef(urlToTest),
   };
 
-  if (!isSupabaseConfigured || !supabase) {
+  if (!isConfigured(urlToTest, keyToTest)) {
     result.error = 'Supabase credentials not configured in environment or settings.';
+    return result;
+  }
+
+  let clientToUse: SupabaseClient | null = null;
+  try {
+    clientToUse = createClient(urlToTest, keyToTest, { auth: { persistSession: false } });
+  } catch (e: any) {
+    result.error = e?.message || 'Invalid Supabase URL or Anon key format.';
     return result;
   }
 
   const startTime = performance.now();
 
   try {
-    // Check key tables
     for (const table of KEY_TABLES) {
-      const { error } = await supabase.from(table).select('count', { count: 'exact', head: true });
+      const { error } = await clientToUse.from(table).select('count', { count: 'exact', head: true });
       if (error) {
         if (error.code === 'PGRST205' || error.message?.includes('schema cache') || error.message?.includes('does not exist')) {
           result.missingTables.push(table);
         } else {
-          // Connected, but possibly table exists with another error (e.g. permission or empty)
           result.connected = true;
           result.existingTables.push(table);
         }
@@ -135,4 +187,5 @@ export async function testSupabaseConnection(): Promise<ConnectionTestResult> {
 
   return result;
 }
+
 

@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { getSupabaseClient } from './supabase';
 import { Project, Customer, PendingTask, SiteReadinessTask, AuditLogEntry, ProcessStageId, ProjectStatus, ProjectHealth, Priority } from '../types';
 
 /**
@@ -231,9 +231,10 @@ export function dbToAuditLog(row: any): AuditLogEntry {
  */
 
 export async function fetchProjectsFromSupabase(): Promise<{ data: Project[] | null; error: any }> {
-  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: 'Supabase not configured' };
   try {
-    const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+    const { data, error } = await client.from('projects').select('*').order('created_at', { ascending: false });
     if (error) return { data: null, error };
     return { data: (data || []).map(dbToProject), error: null };
   } catch (err) {
@@ -242,9 +243,10 @@ export async function fetchProjectsFromSupabase(): Promise<{ data: Project[] | n
 }
 
 export async function fetchCustomersFromSupabase(): Promise<{ data: Customer[] | null; error: any }> {
-  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: 'Supabase not configured' };
   try {
-    const { data, error } = await supabase.from('customers').select('*').order('name');
+    const { data, error } = await client.from('customers').select('*').order('name');
     if (error) return { data: null, error };
     return { data: (data || []).map(dbToCustomer), error: null };
   } catch (err) {
@@ -253,9 +255,10 @@ export async function fetchCustomersFromSupabase(): Promise<{ data: Customer[] |
 }
 
 export async function fetchPendingTasksFromSupabase(): Promise<{ data: PendingTask[] | null; error: any }> {
-  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: 'Supabase not configured' };
   try {
-    const { data, error } = await supabase.from('pending_tasks').select('*').order('created_date', { ascending: false });
+    const { data, error } = await client.from('pending_tasks').select('*').order('created_date', { ascending: false });
     if (error) return { data: null, error };
     return { data: (data || []).map(dbToPendingTask), error: null };
   } catch (err) {
@@ -264,9 +267,10 @@ export async function fetchPendingTasksFromSupabase(): Promise<{ data: PendingTa
 }
 
 export async function fetchSiteTasksFromSupabase(): Promise<{ data: SiteReadinessTask[] | null; error: any }> {
-  if (!supabase) return { data: null, error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { data: null, error: 'Supabase not configured' };
   try {
-    const { data, error } = await supabase.from('site_readiness_tasks').select('*');
+    const { data, error } = await client.from('site_readiness_tasks').select('*');
     if (error) return { data: null, error };
     return { data: (data || []).map(dbToSiteTask), error: null };
   } catch (err) {
@@ -275,10 +279,11 @@ export async function fetchSiteTasksFromSupabase(): Promise<{ data: SiteReadines
 }
 
 export async function upsertProjectToSupabase(project: Project): Promise<{ error: any }> {
-  if (!supabase) return { error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
   try {
     const dbRow = projectToDb(project);
-    const { error } = await supabase.from('projects').upsert(dbRow, { onConflict: 'id' });
+    const { error } = await client.from('projects').upsert(dbRow, { onConflict: 'id' });
     return { error };
   } catch (err) {
     return { error: err };
@@ -286,9 +291,10 @@ export async function upsertProjectToSupabase(project: Project): Promise<{ error
 }
 
 export async function deleteProjectFromSupabase(id: string): Promise<{ error: any }> {
-  if (!supabase) return { error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
   try {
-    const { error } = await supabase.from('projects').delete().eq('id', id);
+    const { error } = await client.from('projects').delete().eq('id', id);
     return { error };
   } catch (err) {
     return { error: err };
@@ -296,10 +302,11 @@ export async function deleteProjectFromSupabase(id: string): Promise<{ error: an
 }
 
 export async function upsertPendingTaskToSupabase(task: PendingTask): Promise<{ error: any }> {
-  if (!supabase) return { error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
   try {
     const dbRow = pendingTaskToDb(task);
-    const { error } = await supabase.from('pending_tasks').upsert(dbRow, { onConflict: 'id' });
+    const { error } = await client.from('pending_tasks').upsert(dbRow, { onConflict: 'id' });
     return { error };
   } catch (err) {
     return { error: err };
@@ -307,10 +314,11 @@ export async function upsertPendingTaskToSupabase(task: PendingTask): Promise<{ 
 }
 
 export async function upsertSiteTaskToSupabase(task: SiteReadinessTask): Promise<{ error: any }> {
-  if (!supabase) return { error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
   try {
     const dbRow = siteTaskToDb(task);
-    const { error } = await supabase.from('site_readiness_tasks').upsert(dbRow, { onConflict: 'id' });
+    const { error } = await client.from('site_readiness_tasks').upsert(dbRow, { onConflict: 'id' });
     return { error };
   } catch (err) {
     return { error: err };
@@ -318,10 +326,11 @@ export async function upsertSiteTaskToSupabase(task: SiteReadinessTask): Promise
 }
 
 export async function insertAuditLogToSupabase(log: AuditLogEntry): Promise<{ error: any }> {
-  if (!supabase) return { error: 'Supabase not configured' };
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
   try {
     const dbRow = auditLogToDb(log);
-    const { error } = await supabase.from('audit_logs').insert(dbRow);
+    const { error } = await client.from('audit_logs').insert(dbRow);
     return { error };
   } catch (err) {
     return { error: err };
@@ -336,24 +345,25 @@ export async function pushSeedDataToSupabase(
   projects: Project[],
   tasks: PendingTask[]
 ): Promise<{ success: boolean; message: string }> {
-  if (!supabase) {
+  const client = getSupabaseClient();
+  if (!client) {
     return { success: false, message: 'Supabase connection is not configured.' };
   }
 
   try {
     // 1. Push customers
     const custRows = customers.map(customerToDb);
-    const { error: custErr } = await supabase.from('customers').upsert(custRows, { onConflict: 'id' });
+    const { error: custErr } = await client.from('customers').upsert(custRows, { onConflict: 'id' });
     if (custErr) throw custErr;
 
     // 2. Push projects
     const projRows = projects.map(projectToDb);
-    const { error: projErr } = await supabase.from('projects').upsert(projRows, { onConflict: 'id' });
+    const { error: projErr } = await client.from('projects').upsert(projRows, { onConflict: 'id' });
     if (projErr) throw projErr;
 
     // 3. Push pending tasks
     const taskRows = tasks.map(pendingTaskToDb);
-    const { error: taskErr } = await supabase.from('pending_tasks').upsert(taskRows, { onConflict: 'id' });
+    const { error: taskErr } = await client.from('pending_tasks').upsert(taskRows, { onConflict: 'id' });
     if (taskErr) throw taskErr;
 
     return {
@@ -367,3 +377,4 @@ export async function pushSeedDataToSupabase(
     };
   }
 }
+

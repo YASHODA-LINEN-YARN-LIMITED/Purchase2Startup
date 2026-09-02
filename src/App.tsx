@@ -12,6 +12,11 @@ import { SiteReadinessOverview } from './components/site/SiteReadinessOverview';
 import { ApprovalsCenterView } from './components/commercial/ApprovalsCenterView';
 import { CreateProjectModal } from './components/project/CreateProjectModal';
 import { DatabaseManagerView } from './components/database/DatabaseManagerView';
+import { StageProcessView } from './components/views/StageProcessView';
+import { FinanceView } from './components/views/FinanceView';
+import { ServiceView } from './components/views/ServiceView';
+import { ReportsView } from './components/views/ReportsView';
+import { AdminView } from './components/views/AdminView';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<string>('dashboard');
@@ -95,7 +100,7 @@ function MainApp() {
             />
           )}
 
-          {currentView === 'approvals' && (
+          {(currentView === 'approvals' || currentView === 'stage-approval') && (
             <ApprovalsCenterView
               onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'commercial')}
             />
@@ -103,6 +108,45 @@ function MainApp() {
 
           {currentView === 'database' && (
             <DatabaseManagerView />
+          )}
+
+          {/* Process Stage Views */}
+          {currentView.startsWith('stage-') && currentView !== 'stage-approval' && (
+            <StageProcessView
+              stageKey={currentView}
+              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')}
+            />
+          )}
+
+          {/* Finance Views */}
+          {(currentView === 'payments' || currentView === 'outstanding') && (
+            <FinanceView
+              viewId={currentView}
+              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'payments')}
+            />
+          )}
+
+          {/* Service Views */}
+          {(currentView === 'service-tickets' || currentView === 'warranty') && (
+            <ServiceView
+              viewId={currentView}
+              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')}
+            />
+          )}
+
+          {/* Reports & Documents Views */}
+          {(currentView === 'documents' || currentView === 'reports') && (
+            <ReportsView
+              viewId={currentView}
+              onSelectProject={(pId, tab) => handleSelectProject(pId, tab || 'flow')}
+            />
+          )}
+
+          {/* System Administration Views */}
+          {(currentView === 'users' || currentView === 'departments' || currentView === 'audit-logs' || currentView === 'settings') && (
+            <AdminView
+              viewId={currentView as 'users' | 'departments' | 'audit-logs' | 'settings'}
+            />
           )}
         </main>
       </div>
@@ -116,6 +160,7 @@ function MainApp() {
     </div>
   );
 }
+
 
 export default function App() {
   return (

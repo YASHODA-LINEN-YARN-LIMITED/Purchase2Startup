@@ -18,9 +18,24 @@ import {
   ChevronRight,
   ShieldCheck,
   HelpCircle,
+  KeyRound,
+  Settings2,
+  Save,
+  RotateCcw,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { supabaseUrl, supabaseAnonKey, isSupabaseConfigured, projectRef, testSupabaseConnection, ConnectionTestResult } from '../../lib/supabase';
+import {
+  supabaseUrl,
+  supabaseAnonKey,
+  isSupabaseConfigured,
+  projectRef,
+  testSupabaseConnection,
+  ConnectionTestResult,
+  saveSupabaseCredentials,
+  clearSupabaseCredentials,
+  getStoredSupabaseUrl,
+  getStoredSupabaseKey,
+} from '../../lib/supabase';
 import { SCHEMA_TABLES, COMPLETE_SCHEMA_SQL, COMPLETE_SEED_SQL, TableDefinition } from '../../data/schemaDefinitions';
 
 export const DatabaseManagerView: React.FC = () => {
@@ -34,7 +49,7 @@ export const DatabaseManagerView: React.FC = () => {
     checkTablesStatus,
   } = useData();
 
-  const [activeTab, setActiveTab] = useState<'tables' | 'sql' | 'seed' | 'sync'>('tables');
+  const [activeTab, setActiveTab] = useState<'tables' | 'sql' | 'seed' | 'sync' | 'config'>('tables');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [expandedTable, setExpandedTable] = useState<string | null>('projects');
@@ -43,11 +58,18 @@ export const DatabaseManagerView: React.FC = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<{ success?: boolean; message?: string } | null>(null);
 
+  // Custom credentials state
+  const [inputUrl, setInputUrl] = useState(getStoredSupabaseUrl() || '');
+  const [inputKey, setInputKey] = useState(getStoredSupabaseKey() || '');
+  const [configMsg, setConfigMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const runConnectionTest = async () => {
     setIsTesting(true);
     setSyncFeedback(null);
     try {
-      const res = await testSupabaseConnection();
+      const activeUrl = getStoredSupabaseUrl();
+      const activeKey = getStoredSupabaseKey();
+      const res = await testSupabaseConnection(activeUrl, activeKey);
       setTestResult(res);
       await checkTablesStatus();
     } catch (err: any) {
@@ -58,8 +80,8 @@ export const DatabaseManagerView: React.FC = () => {
         existingTables: [],
         latencyMs: 0,
         error: err.message,
-        projectUrl: supabaseUrl,
-        projectRef,
+        projectUrl: getStoredSupabaseUrl(),
+        projectRef: projectRef,
       });
     } finally {
       setIsTesting(false);
@@ -70,6 +92,32 @@ export const DatabaseManagerView: React.FC = () => {
     runConnectionTest();
   }, []);
 
+  const handleSaveCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputUrl.trim() || !inputKey.trim()) {
+      setConfigMsg({ type: 'error', text: 'Please enter both Supabase Project URL and Anon Public Key.' });
+      return;
+    }
+
+    try {
+      saveSupabaseCredentials(inputUrl.trim(), inputKey.trim());
+      setConfigMsg({ type: 'success', text: 'Supabase credentials saved successfully!' });
+      await runConnectionTest();
+      setTimeout(() => setConfigMsg(null), 3500);
+    } catch (err: any) {
+      setConfigMsg({ type: 'error', text: err.message || 'Failed to save credentials' });
+    }
+  };
+
+  const handleResetCredentials = async () => {
+    clearSupabaseCredentials();
+    setInputUrl('');
+    setInputKey('');
+    setConfigMsg({ type: 'success', text: 'Credentials reset to defaults.' });
+    await runConnectionTest();
+    setTimeout(() => setConfigMsg(null), 3500);
+  };
+
   const copyToClipboard = (text: string, type: 'schema' | 'seed' | 'url') => {
     navigator.clipboard.writeText(text);
     setCopiedType(type);
@@ -78,6 +126,18 @@ export const DatabaseManagerView: React.FC = () => {
 
   const handlePushData = async () => {
     setSyncFeedback(null);
+    const activeUrl = getStoredSupabaseUrl();
+    const activeKey = getStoredSupabaseKey();
+
+    if (!activeUrl || !activeKey || activeUrl.includes('your-project')) {
+      setActiveTab('config');
+      setSyncFeedback({
+        success: false,
+        message: 'Please configure your Supabase Project URL and Anon Public Key below before pushing data.',
+      });
+      return;
+    }
+
     const res = await pushLocalToSupabase();
     setSyncFeedback(res);
     runConnectionTest();
@@ -85,6 +145,18 @@ export const DatabaseManagerView: React.FC = () => {
 
   const handlePullData = async () => {
     setSyncFeedback(null);
+    const activeUrl = getStoredSupabaseUrl();
+    const activeKey = getStoredSupabaseKey();
+
+    if (!activeUrl || !activeKey || activeUrl.includes('your-project')) {
+      setActiveTab('config');
+      setSyncFeedback({
+        success: false,
+        message: 'Please configure your Supabase Project URL and Anon Public Key below before fetching data.',
+      });
+      return;
+    }
+
     const res = await pullSupabaseToLocal();
     setSyncFeedback(res);
     runConnectionTest();
@@ -103,13 +175,17 @@ export const DatabaseManagerView: React.FC = () => {
     return matchesCat && matchesSearch;
   });
 
-  const sqlEditorUrl = projectRef
-    ? `https://supabase.com/dashboard/project/${projectRef}/sql`
+  const activeRef = projectRef || 'mplutsdsmkmioyrkroez';
+
+  const sqlEditorUrl = activeRef
+    ? `https://supabase.com/dashboard/project/${activeRef}/sql`
     : 'https://supabase.com/dashboard';
 
-  const tableEditorUrl = projectRef
-    ? `https://supabase.com/dashboard/project/${projectRef}/editor`
+  const tableEditorUrl = activeRef
+    ? `https://supabase.com/dashboard/project/${activeRef}/editor`
     : 'https://supabase.com/dashboard';
+
+  const currentConfigured = Boolean(getStoredSupabaseUrl() && getStoredSupabaseKey() && !getStoredSupabaseUrl().includes('your-project'));
 
   return (
     <div className="space-y-6 pb-12 max-w-7xl mx-auto">
@@ -123,7 +199,7 @@ export const DatabaseManagerView: React.FC = () => {
             <div>
               <div className="flex items-center space-x-3">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Supabase Live Database & Schema Center</h1>
-                {isSupabaseConfigured ? (
+                {currentConfigured ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
                     Credentials Configured
@@ -131,7 +207,7 @@ export const DatabaseManagerView: React.FC = () => {
                 ) : (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                     <AlertTriangle className="w-3.5 h-3.5 mr-1 text-amber-600" />
-                    Config Missing
+                    Credentials Needed
                   </span>
                 )}
               </div>
@@ -143,12 +219,19 @@ export const DatabaseManagerView: React.FC = () => {
 
           <div className="flex items-center space-x-2">
             <button
+              onClick={() => setActiveTab('config')}
+              className="inline-flex items-center px-3.5 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+            >
+              <KeyRound className="w-4 h-4 mr-1.5 text-slate-600" />
+              Configure Credentials
+            </button>
+            <button
               onClick={runConnectionTest}
               disabled={isTesting}
               className="inline-flex items-center px-3.5 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-sm disabled:opacity-60"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${isTesting ? 'animate-spin text-blue-600' : 'text-slate-500'}`} />
-              {isTesting ? 'Testing Tables...' : 'Test Connection'}
+              {isTesting ? 'Testing Connection...' : 'Test Connection'}
             </button>
             <a
               href={sqlEditorUrl}
@@ -167,10 +250,10 @@ export const DatabaseManagerView: React.FC = () => {
           <div className="bg-slate-50 rounded-lg p-3 border border-slate-200/70">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Supabase Project URL</span>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-sm font-mono text-slate-800 truncate select-all">{supabaseUrl || 'Not configured'}</span>
-              {supabaseUrl && (
+              <span className="text-sm font-mono text-slate-800 truncate select-all">{getStoredSupabaseUrl() || 'Not configured'}</span>
+              {getStoredSupabaseUrl() && (
                 <button
-                  onClick={() => copyToClipboard(supabaseUrl, 'url')}
+                  onClick={() => copyToClipboard(getStoredSupabaseUrl(), 'url')}
                   className="text-slate-400 hover:text-slate-600 ml-2"
                   title="Copy URL"
                 >
@@ -184,7 +267,7 @@ export const DatabaseManagerView: React.FC = () => {
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Anon Public Key</span>
             <div className="flex items-center justify-between mt-1">
               <span className="text-sm font-mono text-slate-800">
-                {supabaseAnonKey ? `${supabaseAnonKey.substring(0, 12)}••••••••••••${supabaseAnonKey.slice(-6)}` : 'Not configured'}
+                {getStoredSupabaseKey() ? `${getStoredSupabaseKey().substring(0, 12)}••••••••••••${getStoredSupabaseKey().slice(-6)}` : 'Not configured'}
               </span>
               <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 Active
@@ -195,15 +278,15 @@ export const DatabaseManagerView: React.FC = () => {
           <div className="bg-slate-50 rounded-lg p-3 border border-slate-200/70">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block">Database Tables Status</span>
             <div className="flex items-center space-x-2 mt-1">
-              {testResult?.tablesFound || supabaseSyncStatus.tablesReady ? (
+              {testResult?.connected || testResult?.tablesFound || supabaseSyncStatus.tablesReady ? (
                 <span className="inline-flex items-center text-sm font-medium text-emerald-700">
                   <CheckCircle2 className="w-4 h-4 mr-1 text-emerald-600" />
-                  Live Tables Detected & Active
+                  Live Tables Connected & Active
                 </span>
               ) : (
                 <span className="inline-flex items-center text-sm font-medium text-amber-700">
                   <AlertTriangle className="w-4 h-4 mr-1 text-amber-600" />
-                  Schema Setup Required in Supabase
+                  {testResult?.error ? 'Connection / Schema Issue' : 'Setup Credentials / Tables'}
                 </span>
               )}
               {testResult?.latencyMs ? (
@@ -214,8 +297,8 @@ export const DatabaseManagerView: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Guidance if Tables Need Setup */}
-      {(!testResult?.tablesFound && !supabaseSyncStatus.tablesReady) && (
+      {/* Action Guidance if Tables Need Setup or Credentials missing */}
+      {(!currentConfigured || (!testResult?.tablesFound && !supabaseSyncStatus.tablesReady)) && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
           <div className="flex items-start space-x-3">
             <div className="p-2 bg-blue-600 text-white rounded-lg shrink-0">
@@ -226,13 +309,13 @@ export const DatabaseManagerView: React.FC = () => {
                 Complete Your Live Supabase Database Setup (30 Seconds)
               </h3>
               <p className="text-sm text-blue-700 mt-1">
-                Your Supabase connection credentials are confirmed! To create all 30 PostgreSQL tables, relations, and fields, follow these two quick steps:
+                To create all 30 PostgreSQL tables, relations, and fields in your Supabase project:
               </p>
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-white p-3 rounded-lg border border-blue-200/80 shadow-xs flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold text-blue-600 uppercase">Step 1</span>
-                    <p className="text-sm font-medium text-slate-800">Copy the full migration SQL script</p>
+                    <p className="text-sm font-medium text-slate-800">Copy full migration SQL script</p>
                   </div>
                   <button
                     onClick={() => copyToClipboard(COMPLETE_SCHEMA_SQL, 'schema')}
@@ -293,10 +376,10 @@ export const DatabaseManagerView: React.FC = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200 space-x-6">
+      <div className="flex border-b border-slate-200 space-x-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab('tables')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition whitespace-nowrap ${
             activeTab === 'tables'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -307,8 +390,20 @@ export const DatabaseManagerView: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setActiveTab('config')}
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition whitespace-nowrap ${
+            activeTab === 'config'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <KeyRound className="w-4 h-4" />
+          <span>Connection Credentials</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('sql')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition whitespace-nowrap ${
             activeTab === 'sql'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -320,7 +415,7 @@ export const DatabaseManagerView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('seed')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition whitespace-nowrap ${
             activeTab === 'seed'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -332,7 +427,7 @@ export const DatabaseManagerView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('sync')}
-          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+          className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition whitespace-nowrap ${
             activeTab === 'sync'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -342,6 +437,84 @@ export const DatabaseManagerView: React.FC = () => {
           <span>Live Two-Way Sync Studio</span>
         </button>
       </div>
+
+      {/* TAB: CONFIG CREDENTIALS */}
+      {activeTab === 'config' && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 space-y-6 shadow-xs">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+              <Settings2 className="w-5 h-5 text-blue-600" />
+              <span>Configure Supabase Project Credentials</span>
+            </h3>
+            <p className="text-sm text-slate-500 mt-1">
+              Enter or update your project's REST API URL and Anon Public Key from your Supabase Dashboard &gt; Project Settings &gt; API.
+            </p>
+          </div>
+
+          {configMsg && (
+            <div
+              className={`p-4 rounded-lg border text-sm font-medium flex items-center space-x-2 ${
+                configMsg.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              {configMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertTriangle className="w-4 h-4 text-rose-600" />}
+              <span>{configMsg.text}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveCredentials} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Supabase Project URL
+              </label>
+              <input
+                type="text"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                placeholder="https://xxxxxxxx.supabase.co"
+                className="w-full px-3.5 py-2.5 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <span className="text-xs text-slate-400 mt-1 block">
+                Example: <code>https://mplutsdsmkmioyrkroez.supabase.co</code>
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                Supabase Anon Public API Key
+              </label>
+              <textarea
+                rows={3}
+                value={inputKey}
+                onChange={(e) => setInputKey(e.target.value)}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="w-full px-3.5 py-2.5 text-sm font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                type="submit"
+                className="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Credentials & Connect
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetCredentials}
+                className="inline-flex items-center px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Reset Credentials
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* TAB 1: TABLES & SCHEMA EXPLORER */}
       {activeTab === 'tables' && (
@@ -641,3 +814,4 @@ export const DatabaseManagerView: React.FC = () => {
     </div>
   );
 };
+
