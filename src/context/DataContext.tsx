@@ -77,6 +77,8 @@ import {
   fetchPendingTasksFromSupabase,
   upsertProjectToSupabase,
   deleteProjectFromSupabase,
+  upsertCustomerToSupabase,
+  deleteCustomerFromSupabase,
   upsertPendingTaskToSupabase,
   upsertSiteTaskToSupabase,
   insertAuditLogToSupabase,
@@ -119,7 +121,8 @@ interface DataContextType {
   notifications: AppNotification[];
   stageConfigs: StageConfig[];
 
-  // Project operations
+  // Customer & Project operations
+  addCustomer: (c: Omit<Customer, 'id' | 'createdDate'>) => Customer;
   addProject: (p: Omit<Project, 'id' | 'projectNumber' | 'createdDate' | 'lastModifiedDate'>) => Project;
   updateProject: (id: string, updates: Partial<Project>, actorName?: string, actorRole?: string) => void;
   deleteProject: (id: string) => void;
@@ -372,29 +375,58 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         syncError: res.error || null,
       }));
 
-      // If tables are found, pull remote data from Supabase!
+      // If tables are found, pull remote data from Supabase and 2-way merge!
       if (res.tablesFound) {
         const { data: remoteProjects } = await fetchProjectsFromSupabase();
         if (remoteProjects && remoteProjects.length > 0) {
-          setProjects(remoteProjects);
+          setProjects((prevLocalProjects) => {
+            const remoteMap = new Map(remoteProjects.map((p) => [p.id, p]));
+            const merged = [...remoteProjects];
+            for (const localP of prevLocalProjects) {
+              if (!remoteMap.has(localP.id)) {
+                merged.push(localP);
+                upsertProjectToSupabase(localP).catch((e) => console.warn('Sync local project to Supabase error:', e));
+              }
+            }
+            return merged;
+          });
           setSupabaseSyncStatus((prev) => ({
             ...prev,
             lastSyncTime: new Date().toLocaleTimeString(),
           }));
         } else if (remoteProjects && remoteProjects.length === 0) {
-          // Tables exist in Supabase but are empty - seed them
           console.log('Supabase tables empty, auto-seeding with local records...');
           await pushSeedDataToSupabase(customers, projects, pendingTasks);
         }
 
         const { data: remoteCusts } = await fetchCustomersFromSupabase();
         if (remoteCusts && remoteCusts.length > 0) {
-          setCustomers(remoteCusts);
+          setCustomers((prevLocalCusts) => {
+            const remoteMap = new Map(remoteCusts.map((c) => [c.id, c]));
+            const merged = [...remoteCusts];
+            for (const localC of prevLocalCusts) {
+              if (!remoteMap.has(localC.id)) {
+                merged.push(localC);
+                upsertCustomerToSupabase(localC).catch((e) => console.warn('Sync local customer to Supabase error:', e));
+              }
+            }
+            return merged;
+          });
         }
 
         const { data: remoteTasks } = await fetchPendingTasksFromSupabase();
         if (remoteTasks && remoteTasks.length > 0) {
-          setPendingTasks(remoteTasks);
+          setPendingTasks((prevLocalTasks) => {
+            const remoteMap = new Map(remoteTasks.map((t) => [t.id, t]));
+            const merged = [...remoteTasks];
+            for (const localT of prevLocalTasks) {
+              if (!remoteMap.has(localT.id)) {
+                merged.push(localT);
+                upsertPendingTaskToSupabase(localT).catch((e) => console.warn('Sync local pending task to Supabase error:', e));
+              }
+            }
+            return merged;
+          });
         }
       }
     } catch (err: any) {
@@ -430,19 +462,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data: projs, error: pErr } = await fetchProjectsFromSupabase();
       if (pErr) throw pErr;
       if (projs && projs.length > 0) {
-        setProjects(projs);
+        setProjects((prevLocalProjects) => {
+          const remoteMap = new Map(projs.map((p) => [p.id, p]));
+          const merged = [...projs];
+          for (const localP of prevLocalProjects) {
+            if (!remoteMap.has(localP.id)) {
+              merged.push(localP);
+            }
+          }
+          return merged;
+        });
       }
 
       const { data: custs, error: cErr } = await fetchCustomersFromSupabase();
       if (cErr) throw cErr;
       if (custs && custs.length > 0) {
-        setCustomers(custs);
+        setCustomers((prevLocalCusts) => {
+          const remoteMap = new Map(custs.map((c) => [c.id, c]));
+          const merged = [...custs];
+          for (const localC of prevLocalCusts) {
+            if (!remoteMap.has(localC.id)) {
+              merged.push(localC);
+            }
+          }
+          return merged;
+        });
       }
 
       const { data: tasks, error: tErr } = await fetchPendingTasksFromSupabase();
       if (tErr) throw tErr;
       if (tasks && tasks.length > 0) {
-        setPendingTasks(tasks);
+        setPendingTasks((prevLocalTasks) => {
+          const remoteMap = new Map(tasks.map((t) => [t.id, t]));
+          const merged = [...tasks];
+          for (const localT of prevLocalTasks) {
+            if (!remoteMap.has(localT.id)) {
+              merged.push(localT);
+            }
+          }
+          return merged;
+        });
       }
 
       setSupabaseSyncStatus((prev) => ({
@@ -489,6 +548,23 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     return Math.min(100, Math.max(2, progress));
+  };
+
+  // Add Customer
+  const addCustomer = (c: Omit<Customer, 'id' | 'createdDate'>): Customer => {
+    const today = new Date().toISOString().substring(0, 10);
+    const newCustomer: Customer = {
+      ...c,
+      id: `cust-${Date.now()}`,
+      createdDate: today,
+    };
+    setCustomers((prev) => [newCustomer, ...prev]);
+
+    if (isSupabaseConfigured) {
+      upsertCustomerToSupabase(newCustomer).catch((err) => console.warn('Supabase upsert customer failed:', err));
+    }
+
+    return newCustomer;
   };
 
   // Add Project
@@ -1079,10 +1155,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `st-${Date.now()}`,
     };
     setSiteTasks((prev) => [...prev, newTask]);
+    if (isSupabaseConfigured) {
+      upsertSiteTaskToSupabase(newTask).catch((err) => console.warn('Supabase site task upsert failed:', err));
+    }
   };
 
   const updateSiteTask = (id: string, updates: Partial<SiteReadinessTask>) => {
-    setSiteTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setSiteTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated = { ...t, ...updates };
+        if (isSupabaseConfigured) {
+          upsertSiteTaskToSupabase(updated).catch((err) => console.warn('Supabase site task update failed:', err));
+        }
+        return updated;
+      })
+    );
   };
 
   const generateSiteCertificate = (
@@ -1183,25 +1271,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id,
     };
     setPendingTasks((prev) => [newTask, ...prev]);
+    if (isSupabaseConfigured) {
+      upsertPendingTaskToSupabase(newTask).catch((err) => console.warn('Supabase upsert pending task failed:', err));
+    }
   };
 
   const updatePendingTask = (id: string, updates: Partial<PendingTask>) => {
-    setPendingTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
+    setPendingTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated = { ...t, ...updates };
+        if (isSupabaseConfigured) {
+          upsertPendingTaskToSupabase(updated).catch((err) => console.warn('Supabase update pending task failed:', err));
+        }
+        return updated;
+      })
+    );
   };
 
   const resolvePendingTask = (id: string, closureRemarks: string) => {
     const today = new Date().toISOString().substring(0, 10);
     setPendingTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: 'Closed',
-              closedDate: today,
-              closureRemarks,
-            }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const updated = {
+          ...t,
+          status: 'Closed' as const,
+          closedDate: today,
+          closureRemarks,
+        };
+        if (isSupabaseConfigured) {
+          upsertPendingTaskToSupabase(updated).catch((err) => console.warn('Supabase resolve pending task failed:', err));
+        }
+        return updated;
+      })
     );
   };
 
@@ -1477,6 +1580,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notifications,
         stageConfigs,
 
+        addCustomer,
         addProject,
         updateProject,
         deleteProject,

@@ -301,6 +301,29 @@ export async function deleteProjectFromSupabase(id: string): Promise<{ error: an
   }
 }
 
+export async function upsertCustomerToSupabase(customer: Customer): Promise<{ error: any }> {
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
+  try {
+    const dbRow = customerToDb(customer);
+    const { error } = await client.from('customers').upsert(dbRow, { onConflict: 'id' });
+    return { error };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
+export async function deleteCustomerFromSupabase(id: string): Promise<{ error: any }> {
+  const client = getSupabaseClient();
+  if (!client) return { error: 'Supabase not configured' };
+  try {
+    const { error } = await client.from('customers').delete().eq('id', id);
+    return { error };
+  } catch (err) {
+    return { error: err };
+  }
+}
+
 export async function upsertPendingTaskToSupabase(task: PendingTask): Promise<{ error: any }> {
   const client = getSupabaseClient();
   if (!client) return { error: 'Supabase not configured' };
