@@ -253,20 +253,98 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('p2s_customers', JSON.stringify(customers));
   }, [customers]);
   useEffect(() => {
-    localStorage.setItem('p2s_siteTasks', JSON.stringify(siteTasks));
-  }, [siteTasks]);
+    localStorage.setItem('p2s_requests', JSON.stringify(requests));
+  }, [requests]);
   useEffect(() => {
-    localStorage.setItem('p2s_pendingTasks', JSON.stringify(pendingTasks));
-  }, [pendingTasks]);
+    localStorage.setItem('p2s_clarifications', JSON.stringify(clarifications));
+  }, [clarifications]);
+  useEffect(() => {
+    localStorage.setItem('p2s_technicalReviews', JSON.stringify(technicalReviews));
+  }, [technicalReviews]);
   useEffect(() => {
     localStorage.setItem('p2s_quotations', JSON.stringify(quotations));
   }, [quotations]);
   useEffect(() => {
+    localStorage.setItem('p2s_negotiations', JSON.stringify(negotiations));
+  }, [negotiations]);
+  useEffect(() => {
+    localStorage.setItem('p2s_paymentMilestones', JSON.stringify(paymentMilestones));
+  }, [paymentMilestones]);
+  useEffect(() => {
+    localStorage.setItem('p2s_approvalRequests', JSON.stringify(approvalRequests));
+  }, [approvalRequests]);
+  useEffect(() => {
+    localStorage.setItem('p2s_approvalHistory', JSON.stringify(approvalHistory));
+  }, [approvalHistory]);
+  useEffect(() => {
+    localStorage.setItem('p2s_workOrders', JSON.stringify(workOrders));
+  }, [workOrders]);
+  useEffect(() => {
+    localStorage.setItem('p2s_advancePayments', JSON.stringify(advancePayments));
+  }, [advancePayments]);
+  useEffect(() => {
+    localStorage.setItem('p2s_manufacturingActivities', JSON.stringify(manufacturingActivities));
+  }, [manufacturingActivities]);
+  useEffect(() => {
+    localStorage.setItem('p2s_procurementItems', JSON.stringify(procurementItems));
+  }, [procurementItems]);
+  useEffect(() => {
+    localStorage.setItem('p2s_qcInspections', JSON.stringify(qcInspections));
+  }, [qcInspections]);
+  useEffect(() => {
+    localStorage.setItem('p2s_dispatchRecords', JSON.stringify(dispatchRecords));
+  }, [dispatchRecords]);
+  useEffect(() => {
+    localStorage.setItem('p2s_deliveryRecords', JSON.stringify(deliveryRecords));
+  }, [deliveryRecords]);
+  useEffect(() => {
+    localStorage.setItem('p2s_siteTasks', JSON.stringify(siteTasks));
+  }, [siteTasks]);
+  useEffect(() => {
+    localStorage.setItem('p2s_siteCertificates', JSON.stringify(siteCertificates));
+  }, [siteCertificates]);
+  useEffect(() => {
+    localStorage.setItem('p2s_pendingTasks', JSON.stringify(pendingTasks));
+  }, [pendingTasks]);
+  useEffect(() => {
+    localStorage.setItem('p2s_materialReceipts', JSON.stringify(materialReceipts));
+  }, [materialReceipts]);
+  useEffect(() => {
+    localStorage.setItem('p2s_installationActivities', JSON.stringify(installationActivities));
+  }, [installationActivities]);
+  useEffect(() => {
+    localStorage.setItem('p2s_dailyProgress', JSON.stringify(dailyProgress));
+  }, [dailyProgress]);
+  useEffect(() => {
+    localStorage.setItem('p2s_precommissioningChecks', JSON.stringify(precommissioningChecks));
+  }, [precommissioningChecks]);
+  useEffect(() => {
+    localStorage.setItem('p2s_commissioningRecords', JSON.stringify(commissioningRecords));
+  }, [commissioningRecords]);
+  useEffect(() => {
+    localStorage.setItem('p2s_machineStartRecords', JSON.stringify(machineStartRecords));
+  }, [machineStartRecords]);
+  useEffect(() => {
+    localStorage.setItem('p2s_documents', JSON.stringify(documents));
+  }, [documents]);
+  useEffect(() => {
+    localStorage.setItem('p2s_finalPayments', JSON.stringify(finalPayments));
+  }, [finalPayments]);
+  useEffect(() => {
+    localStorage.setItem('p2s_serviceTickets', JSON.stringify(serviceTickets));
+  }, [serviceTickets]);
+  useEffect(() => {
     localStorage.setItem('p2s_auditLogs', JSON.stringify(auditLogs));
   }, [auditLogs]);
   useEffect(() => {
+    localStorage.setItem('p2s_comments', JSON.stringify(comments));
+  }, [comments]);
+  useEffect(() => {
     localStorage.setItem('p2s_notifications', JSON.stringify(notifications));
   }, [notifications]);
+  useEffect(() => {
+    localStorage.setItem('p2s_stageConfigs', JSON.stringify(stageConfigs));
+  }, [stageConfigs]);
 
   // Supabase Live Synchronization State
   const [supabaseSyncStatus, setSupabaseSyncStatus] = useState<{
