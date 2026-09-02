@@ -1,0 +1,6 @@
+{
+  "name": "Purchase to Start-up Management System",
+  "description": "Enterprise Purchase to Start-up (P2S) equipment lifecycle management system tracking customer enquiry, engineering, quotation, approvals, manufacturing, site readiness, installation, commissioning, and after-sales service.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
