@@ -58,7 +58,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   const { projects, advanceProjectStage, updateProject, calculateProjectProgress } = useData();
   const { currentUser, canPerform } = useAuth();
 
-  const project = projects.find((p) => p.id === projectId);
+  const project = projects.find((p) => p.id === projectId || p.projectNumber === projectId) || projects[0];
   const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [showCertModal, setShowCertModal] = useState(false);
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);

@@ -14,7 +14,7 @@ import { CreateProjectModal } from './components/project/CreateProjectModal';
 
 function MainApp() {
   const [currentView, setCurrentView] = useState<string>('dashboard');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>('PRJ-001');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>('p1');
   const [initialProjectTab, setInitialProjectTab] = useState<string>('flow');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);

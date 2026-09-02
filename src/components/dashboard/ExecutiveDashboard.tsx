@@ -58,13 +58,13 @@ export const ExecutiveDashboard: React.FC<Props> = ({
           <div>
             <div className="flex items-center gap-2 text-blue-400 text-xs font-semibold uppercase tracking-wider mb-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Executive Overview • P2S Control Center</span>
+              <span>Yashoda Linen & Yarn Ltd. • P2S Mill Control Center</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">
-              Purchase to Start-up Management System
+              Machinery Purchase to Start-up Management
             </h1>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Real-time monitoring across 21 lifecycle stages from initial enquiry to commercial handover.
+              End-to-end tracking for all plant machinery purchases across 21 stages—from enquiry & technical clearance to site erection, commissioning, and commercial start-up.
             </p>
           </div>
 
@@ -73,7 +73,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
               onClick={onNewProject}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-xs transition-all"
             >
-              + Create New Project
+              + Add Machine Package
             </button>
           </div>
         </div>
@@ -86,7 +86,7 @@ export const ExecutiveDashboard: React.FC<Props> = ({
           className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs hover:border-blue-400 cursor-pointer transition-all group"
         >
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Total Projects</span>
+            <span className="text-xs font-medium">Total Machine Packages</span>
             <FolderGit2 className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-2xl font-bold text-slate-900 mt-2">{totalProjects}</div>

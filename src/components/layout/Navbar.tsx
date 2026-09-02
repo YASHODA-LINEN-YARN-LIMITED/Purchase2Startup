@@ -71,19 +71,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
             onClick={() => onNavigate?.('dashboard')}
             className="cursor-pointer flex items-center gap-2.5"
           >
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold text-lg tracking-wider">
-              P2S
+            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-xs font-bold text-base tracking-wider">
+              YLY
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-900 tracking-tight text-base">
-                  Purchase to Start-up
+                  Yashoda Linen & Yarn Ltd.
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                  Enterprise
+                  P2S Portal
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">Lifecycle Management System</p>
+              <p className="text-xs text-slate-500 hidden sm:block">Mill Machinery Purchase to Start-up Lifecycle</p>
             </div>
           </div>
         </div>
