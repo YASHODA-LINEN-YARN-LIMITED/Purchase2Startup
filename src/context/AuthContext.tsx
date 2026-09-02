@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserRole } from '../types';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AuthContextType {
   currentUser: UserProfile;

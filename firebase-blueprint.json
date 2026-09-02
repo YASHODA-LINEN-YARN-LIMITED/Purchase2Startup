@@ -1,0 +1,20 @@
+{
+  "entities": {
+    "projects": {
+      "title": "Projects",
+      "description": "Machine purchase projects data",
+      "fields": {
+        "id": { "type": "string" },
+        "projectName": { "type": "string" }
+      }
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Customer Master Records",
+      "fields": {
+        "id": { "type": "string" },
+        "companyName": { "type": "string" }
+      }
+    }
+  }
+}

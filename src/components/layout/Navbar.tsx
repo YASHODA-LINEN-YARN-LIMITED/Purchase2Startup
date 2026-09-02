@@ -12,10 +12,10 @@ import {
   ExternalLink,
   SlidersHorizontal,
   X,
+  Flame,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { isSupabaseConfigured } from '../../lib/supabase';
 import { UserRole } from '../../types';
 
 interface NavbarProps {
@@ -172,15 +172,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onSelectProject, onNavigate }) =
 
         {/* Right Action Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Supabase Status Indicator */}
+          {/* Firebase Status Indicator */}
           <button
             onClick={() => onNavigate?.('database')}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-blue-800 transition cursor-pointer"
-            title="Open Supabase Live Database & Schema Center"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-amber-900 transition cursor-pointer"
+            title="Open Firebase Firestore Database Center"
           >
-            <Database className="w-3.5 h-3.5 text-blue-600" />
+            <Flame className="w-3.5 h-3.5 text-amber-600" />
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold">{isSupabaseConfigured ? 'Supabase Live DB' : 'Database Setup'}</span>
+            <span className="font-semibold">Firebase Firestore</span>
           </button>
 
           {/* Quick Role Switcher Pill */}

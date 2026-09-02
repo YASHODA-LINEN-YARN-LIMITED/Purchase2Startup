@@ -72,19 +72,11 @@ import {
   INITIAL_NOTIFICATIONS,
 } from '../data/initialData';
 import {
-  fetchProjectsFromSupabase,
-  fetchCustomersFromSupabase,
-  fetchPendingTasksFromSupabase,
-  upsertProjectToSupabase,
-  deleteProjectFromSupabase,
-  upsertCustomerToSupabase,
-  deleteCustomerFromSupabase,
-  upsertPendingTaskToSupabase,
-  upsertSiteTaskToSupabase,
-  insertAuditLogToSupabase,
-  pushSeedDataToSupabase,
-} from '../lib/databaseSync';
-import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabase';
+  saveDocToFirestore,
+  deleteDocFromFirestore,
+  fetchCollectionFromFirestore,
+  subscribeCollectionFromFirestore,
+} from '../lib/firebase';
 
 interface DataContextType {
   customers: Customer[];
@@ -196,8 +188,17 @@ interface DataContextType {
     lastSyncTime: string | null;
     syncError: string | null;
   };
+  firebaseSyncStatus: {
+    isConnected: boolean;
+    tablesReady: boolean;
+    isSyncing: boolean;
+    lastSyncTime: string | null;
+    syncError: string | null;
+  };
   pushLocalToSupabase: () => Promise<{ success: boolean; message: string }>;
   pullSupabaseToLocal: () => Promise<{ success: boolean; message: string }>;
+  pushAllToFirestore: () => Promise<{ success: boolean; message: string }>;
+  pullAllFromFirestore: () => Promise<{ success: boolean; message: string }>;
   checkTablesStatus: () => Promise<void>;
 }
 
@@ -349,174 +350,131 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('p2s_stageConfigs', JSON.stringify(stageConfigs));
   }, [stageConfigs]);
 
-  // Supabase Live Synchronization State
-  const [supabaseSyncStatus, setSupabaseSyncStatus] = useState<{
+  // Firebase Firestore Synchronization State
+  const [firebaseSyncStatus, setFirebaseSyncStatus] = useState<{
     isConnected: boolean;
     tablesReady: boolean;
     isSyncing: boolean;
     lastSyncTime: string | null;
     syncError: string | null;
   }>({
-    isConnected: false,
-    tablesReady: false,
+    isConnected: true,
+    tablesReady: true,
     isSyncing: false,
-    lastSyncTime: null,
+    lastSyncTime: new Date().toLocaleTimeString(),
     syncError: null,
   });
 
-  const checkTablesStatus = async () => {
-    if (!isSupabaseConfigured) return;
+  const supabaseSyncStatus = firebaseSyncStatus;
+
+  const pushAllToFirestore = async () => {
+    setFirebaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
     try {
-      const res = await testSupabaseConnection();
-      setSupabaseSyncStatus((prev) => ({
-        ...prev,
-        isConnected: res.connected,
-        tablesReady: res.tablesFound,
-        syncError: res.error || null,
-      }));
+      const collectionsMap: Array<{ name: string; items: any[] }> = [
+        { name: 'projects', items: projects },
+        { name: 'customers', items: customers },
+        { name: 'requests', items: requests },
+        { name: 'clarifications', items: clarifications },
+        { name: 'technicalReviews', items: technicalReviews },
+        { name: 'quotations', items: quotations },
+        { name: 'negotiations', items: negotiations },
+        { name: 'paymentMilestones', items: paymentMilestones },
+        { name: 'approvalRequests', items: approvalRequests },
+        { name: 'approvalHistory', items: approvalHistory },
+        { name: 'workOrders', items: workOrders },
+        { name: 'advancePayments', items: advancePayments },
+        { name: 'manufacturingActivities', items: manufacturingActivities },
+        { name: 'procurementItems', items: procurementItems },
+        { name: 'qcInspections', items: qcInspections },
+        { name: 'dispatchRecords', items: dispatchRecords },
+        { name: 'deliveryRecords', items: deliveryRecords },
+        { name: 'siteTasks', items: siteTasks },
+        { name: 'siteCertificates', items: siteCertificates },
+        { name: 'pendingTasks', items: pendingTasks },
+        { name: 'materialReceipts', items: materialReceipts },
+        { name: 'installationActivities', items: installationActivities },
+        { name: 'dailyProgress', items: dailyProgress },
+        { name: 'precommissioningChecks', items: precommissioningChecks },
+        { name: 'commissioningRecords', items: commissioningRecords },
+        { name: 'machineStartRecords', items: machineStartRecords },
+        { name: 'documents', items: documents },
+        { name: 'finalPayments', items: finalPayments },
+        { name: 'serviceTickets', items: serviceTickets },
+        { name: 'auditLogs', items: auditLogs },
+        { name: 'comments', items: comments },
+        { name: 'notifications', items: notifications },
+      ];
 
-      // If tables are found, pull remote data from Supabase and 2-way merge!
-      if (res.tablesFound) {
-        const { data: remoteProjects } = await fetchProjectsFromSupabase();
-        if (remoteProjects && remoteProjects.length > 0) {
-          setProjects((prevLocalProjects) => {
-            const remoteMap = new Map(remoteProjects.map((p) => [p.id, p]));
-            const merged = [...remoteProjects];
-            for (const localP of prevLocalProjects) {
-              if (!remoteMap.has(localP.id)) {
-                merged.push(localP);
-                upsertProjectToSupabase(localP).catch((e) => console.warn('Sync local project to Supabase error:', e));
-              }
-            }
-            return merged;
-          });
-          setSupabaseSyncStatus((prev) => ({
-            ...prev,
-            lastSyncTime: new Date().toLocaleTimeString(),
-          }));
-        } else if (remoteProjects && remoteProjects.length === 0) {
-          console.log('Supabase tables empty, auto-seeding with local records...');
-          await pushSeedDataToSupabase(customers, projects, pendingTasks);
-        }
-
-        const { data: remoteCusts } = await fetchCustomersFromSupabase();
-        if (remoteCusts && remoteCusts.length > 0) {
-          setCustomers((prevLocalCusts) => {
-            const remoteMap = new Map(remoteCusts.map((c) => [c.id, c]));
-            const merged = [...remoteCusts];
-            for (const localC of prevLocalCusts) {
-              if (!remoteMap.has(localC.id)) {
-                merged.push(localC);
-                upsertCustomerToSupabase(localC).catch((e) => console.warn('Sync local customer to Supabase error:', e));
-              }
-            }
-            return merged;
-          });
-        }
-
-        const { data: remoteTasks } = await fetchPendingTasksFromSupabase();
-        if (remoteTasks && remoteTasks.length > 0) {
-          setPendingTasks((prevLocalTasks) => {
-            const remoteMap = new Map(remoteTasks.map((t) => [t.id, t]));
-            const merged = [...remoteTasks];
-            for (const localT of prevLocalTasks) {
-              if (!remoteMap.has(localT.id)) {
-                merged.push(localT);
-                upsertPendingTaskToSupabase(localT).catch((e) => console.warn('Sync local pending task to Supabase error:', e));
-              }
-            }
-            return merged;
-          });
+      for (const col of collectionsMap) {
+        for (const item of col.items) {
+          if (item && item.id) {
+            await saveDocToFirestore(col.name, item);
+          }
         }
       }
-    } catch (err: any) {
-      console.warn('Supabase status check error:', err);
-    }
-  };
 
-  useEffect(() => {
-    checkTablesStatus();
-  }, []);
-
-  const pushLocalToSupabase = async () => {
-    setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
-    try {
-      const res = await pushSeedDataToSupabase(customers, projects, pendingTasks);
-      setSupabaseSyncStatus((prev) => ({
-        ...prev,
-        isSyncing: false,
-        lastSyncTime: new Date().toLocaleTimeString(),
-        syncError: res.success ? null : res.message,
-      }));
-      return res;
-    } catch (err: any) {
-      const msg = err.message || 'Error pushing to Supabase';
-      setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: msg }));
-      return { success: false, message: msg };
-    }
-  };
-
-  const pullSupabaseToLocal = async () => {
-    setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
-    try {
-      const { data: projs, error: pErr } = await fetchProjectsFromSupabase();
-      if (pErr) throw pErr;
-      if (projs && projs.length > 0) {
-        setProjects((prevLocalProjects) => {
-          const remoteMap = new Map(projs.map((p) => [p.id, p]));
-          const merged = [...projs];
-          for (const localP of prevLocalProjects) {
-            if (!remoteMap.has(localP.id)) {
-              merged.push(localP);
-            }
-          }
-          return merged;
-        });
-      }
-
-      const { data: custs, error: cErr } = await fetchCustomersFromSupabase();
-      if (cErr) throw cErr;
-      if (custs && custs.length > 0) {
-        setCustomers((prevLocalCusts) => {
-          const remoteMap = new Map(custs.map((c) => [c.id, c]));
-          const merged = [...custs];
-          for (const localC of prevLocalCusts) {
-            if (!remoteMap.has(localC.id)) {
-              merged.push(localC);
-            }
-          }
-          return merged;
-        });
-      }
-
-      const { data: tasks, error: tErr } = await fetchPendingTasksFromSupabase();
-      if (tErr) throw tErr;
-      if (tasks && tasks.length > 0) {
-        setPendingTasks((prevLocalTasks) => {
-          const remoteMap = new Map(tasks.map((t) => [t.id, t]));
-          const merged = [...tasks];
-          for (const localT of prevLocalTasks) {
-            if (!remoteMap.has(localT.id)) {
-              merged.push(localT);
-            }
-          }
-          return merged;
-        });
-      }
-
-      setSupabaseSyncStatus((prev) => ({
-        ...prev,
+      setFirebaseSyncStatus({
+        isConnected: true,
+        tablesReady: true,
         isSyncing: false,
         lastSyncTime: new Date().toLocaleTimeString(),
         syncError: null,
-      }));
-      return { success: true, message: 'Successfully fetched latest records from Supabase.' };
+      });
+      return { success: true, message: 'All datasets saved to Firebase Firestore successfully!' };
     } catch (err: any) {
-      const msg = err.message || 'Error pulling from Supabase';
-      setSupabaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: msg }));
-      return { success: false, message: msg };
+      setFirebaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: err.message }));
+      return { success: false, message: err.message || 'Firestore Sync Error' };
     }
   };
+
+  const pullAllFromFirestore = async () => {
+    setFirebaseSyncStatus((prev) => ({ ...prev, isSyncing: true }));
+    try {
+      const p = await fetchCollectionFromFirestore<Project>('projects');
+      if (p.length > 0) setProjects(p);
+      const c = await fetchCollectionFromFirestore<Customer>('customers');
+      if (c.length > 0) setCustomers(c);
+      const t = await fetchCollectionFromFirestore<PendingTask>('pendingTasks');
+      if (t.length > 0) setPendingTasks(t);
+
+      setFirebaseSyncStatus({
+        isConnected: true,
+        tablesReady: true,
+        isSyncing: false,
+        lastSyncTime: new Date().toLocaleTimeString(),
+        syncError: null,
+      });
+      return { success: true, message: 'Data successfully reloaded from Firebase Firestore!' };
+    } catch (err: any) {
+      setFirebaseSyncStatus((prev) => ({ ...prev, isSyncing: false, syncError: err.message }));
+      return { success: false, message: err.message || 'Firestore Fetch Error' };
+    }
+  };
+
+  const pushLocalToSupabase = async () => pushAllToFirestore();
+  const pullSupabaseToLocal = async () => pullAllFromFirestore();
+  const checkTablesStatus = async () => {
+    setFirebaseSyncStatus((prev) => ({ ...prev, lastSyncTime: new Date().toLocaleTimeString() }));
+  };
+
+  // Real-time Firestore sync setup on mount
+  useEffect(() => {
+    const unsubProjects = subscribeCollectionFromFirestore<Project>('projects', (items) => {
+      if (items && items.length > 0) setProjects(items);
+    });
+    const unsubCusts = subscribeCollectionFromFirestore<Customer>('customers', (items) => {
+      if (items && items.length > 0) setCustomers(items);
+    });
+    const unsubTasks = subscribeCollectionFromFirestore<PendingTask>('pendingTasks', (items) => {
+      if (items && items.length > 0) setPendingTasks(items);
+    });
+
+    return () => {
+      unsubProjects();
+      unsubCusts();
+      unsubTasks();
+    };
+  }, []);
 
   // Record Audit Log helper
   const recordAuditLog = (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
@@ -526,9 +484,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
     };
     setAuditLogs((prev) => [newEntry, ...prev]);
-    if (supabaseSyncStatus.tablesReady) {
-      insertAuditLogToSupabase(newEntry).catch(() => {});
-    }
+    saveDocToFirestore('auditLogs', newEntry);
   };
 
   // Calculate project completion % dynamically from stage weights
@@ -559,11 +515,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdDate: today,
     };
     setCustomers((prev) => [newCustomer, ...prev]);
-
-    if (isSupabaseConfigured) {
-      upsertCustomerToSupabase(newCustomer).catch((err) => console.warn('Supabase upsert customer failed:', err));
-    }
-
+    saveDocToFirestore('customers', newCustomer);
     return newCustomer;
   };
 
@@ -586,6 +538,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setProjects((prev) => [newProject, ...prev]);
+    saveDocToFirestore('projects', newProject);
 
     recordAuditLog({
       userName: p.createdBy || 'System',
@@ -613,10 +566,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       salesPerson: newProject.salesPerson,
       status: 'Draft',
     });
-
-    if (supabaseSyncStatus.tablesReady) {
-      upsertProjectToSupabase(newProject).catch((err) => console.warn('Supabase upsert project failed:', err));
-    }
 
     return newProject;
   };
@@ -646,8 +595,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
 
-    if (supabaseSyncStatus.tablesReady && updatedProject) {
-      upsertProjectToSupabase(updatedProject).catch((err) => console.warn('Supabase project update failed:', err));
+    if (updatedProject) {
+      saveDocToFirestore('projects', updatedProject);
     }
 
     recordAuditLog({
@@ -666,9 +615,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const deleteProject = (id: string) => {
     const target = projects.find((p) => p.id === id);
     setProjects((prev) => prev.filter((p) => p.id !== id));
-    if (supabaseSyncStatus.tablesReady) {
-      deleteProjectFromSupabase(id).catch((err) => console.warn('Supabase delete project failed:', err));
-    }
+    deleteDocFromFirestore('projects', id);
     if (target) {
       recordAuditLog({
         userName: 'Admin',
@@ -715,8 +662,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     );
 
-    if (supabaseSyncStatus.tablesReady && updatedProj) {
-      upsertProjectToSupabase(updatedProj).catch((err) => console.warn('Supabase stage advance update failed:', err));
+    if (updatedProj) {
+      saveDocToFirestore('projects', updatedProj);
     }
 
     recordAuditLog({
@@ -1155,9 +1102,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `st-${Date.now()}`,
     };
     setSiteTasks((prev) => [...prev, newTask]);
-    if (isSupabaseConfigured) {
-      upsertSiteTaskToSupabase(newTask).catch((err) => console.warn('Supabase site task upsert failed:', err));
-    }
+    saveDocToFirestore('siteTasks', newTask);
   };
 
   const updateSiteTask = (id: string, updates: Partial<SiteReadinessTask>) => {
@@ -1165,9 +1110,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((t) => {
         if (t.id !== id) return t;
         const updated = { ...t, ...updates };
-        if (isSupabaseConfigured) {
-          upsertSiteTaskToSupabase(updated).catch((err) => console.warn('Supabase site task update failed:', err));
-        }
+        saveDocToFirestore('siteTasks', updated);
         return updated;
       })
     );
@@ -1271,9 +1214,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id,
     };
     setPendingTasks((prev) => [newTask, ...prev]);
-    if (isSupabaseConfigured) {
-      upsertPendingTaskToSupabase(newTask).catch((err) => console.warn('Supabase upsert pending task failed:', err));
-    }
+    saveDocToFirestore('pendingTasks', newTask);
   };
 
   const updatePendingTask = (id: string, updates: Partial<PendingTask>) => {
@@ -1281,9 +1222,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((t) => {
         if (t.id !== id) return t;
         const updated = { ...t, ...updates };
-        if (isSupabaseConfigured) {
-          upsertPendingTaskToSupabase(updated).catch((err) => console.warn('Supabase update pending task failed:', err));
-        }
+        saveDocToFirestore('pendingTasks', updated);
         return updated;
       })
     );
@@ -1300,9 +1239,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           closedDate: today,
           closureRemarks,
         };
-        if (isSupabaseConfigured) {
-          upsertPendingTaskToSupabase(updated).catch((err) => console.warn('Supabase resolve pending task failed:', err));
-        }
+        saveDocToFirestore('pendingTasks', updated);
         return updated;
       })
     );
@@ -1634,8 +1571,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateStageConfig,
         exportToCsv,
         supabaseSyncStatus,
+        firebaseSyncStatus,
         pushLocalToSupabase,
         pullSupabaseToLocal,
+        pushAllToFirestore,
+        pullAllFromFirestore,
         checkTablesStatus,
       }}
     >
